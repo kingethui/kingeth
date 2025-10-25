@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0f0;
+            padding: 40px;
+        }
+        .result {
+            background: #001a00;
+            border: 2px solid #0f0;
+            padding: 20px;
+            margin: 10px 0;
+        }
+        button {
+            background: #000;
+            border: 2px solid #0f0;
+            color: #0f0;
+            padding: 15px 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0f0;
+            color: #000;
+        }
+        .error {
+            color: #f00;
+        }
+        .success {
+            color: #0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>KING TOKEN CONTRACT TEST</h1>
+    
+    <div class="result">
+        <strong>Contract Address:</strong><br>
+        <span id="address">0x0db420e953558328321A9Ea874A16e3E177b82B1</span>
+    </div>
+    
+    <button onclick="testWeb3()">1. Test Web3 Library</button>
+    <button onclick="testConnection()">2. Test RPC Connection</button>
+    <button onclick="testContract()">3. Test Contract Call</button>
+    <button onclick="testAll()">4. Run All Tests</button>
+    
+    <div id="results"></div>
+
+    <script>
+        const CONTRACT_ADDRESS = '0x0db420e953558328321A9Ea874A16e3E177b82B1';
+        const RPC_URL = 'https://base.llamarpc.com';
+        
+        const CONTRACT_ABI = [
+            {
+                "inputs": [],
+                "name": "totalSupply",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getContractTokenBalance",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+        
+        function log(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = 'result ' + (isError ? 'error' : 'success');
+            div.innerHTML = message;
+            document.getElementById('results').appendChild(div);
+            console.log(message);
+        }
+        
+        function testWeb3() {
+            document.getElementById('results').innerHTML = '';
+            log('=== Testing Web3 Library ===');
+            
+            if (typeof Web3 === 'undefined') {
+                log('❌ Web3 library not loaded!', true);
+                return false;
+            }
+            
+            log('✅ Web3 library loaded successfully');
+            log('Web3 version: ' + Web3.version);
+            return true;
+        }
+        
+        async function testConnection() {
+            document.getElementById('results').innerHTML = '';
+            log('=== Testing RPC Connection ===');
+            
+            try {
+                const web3 = new Web3(RPC_URL);
+                log('✅ Web3 instance created');
+                log('RPC URL: ' + RPC_URL);
+                
+                const blockNumber = await web3.eth.getBlockNumber();
+                log('✅ Connected to Base network');
+                log('Current block number: ' + blockNumber);
+                
+                return true;
+            } catch (error) {
+                log('❌ Connection failed: ' + error.message, true);
+                return false;
+            }
+        }
+        
+        async function testContract() {
+            document.getElementById('results').innerHTML = '';
+            log('=== Testing Contract Call ===');
+            
+            try {
+                const web3 = new Web3(RPC_URL);
+                log('✅ Web3 instance created');
+                
+                const contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
+                log('✅ Contract instance created');
+                log('Contract address: ' + CONTRACT_ADDRESS);
+                
+                log('Calling totalSupply()...');
+                const totalSupply = await contract.methods.totalSupply().call();
+                log('✅ totalSupply() call successful!');
+                log('Raw value: ' + totalSupply);
+                
+                const formatted = web3.utils.fromWei(totalSupply, 'ether');
+                log('Formatted: ' + formatted + ' KING');
+                
+                log('Calling getContractTokenBalance()...');
+                const balance = await contract.methods.getContractTokenBalance().call();
+                log('✅ getContractTokenBalance() call successful!');
+                log('Raw value: ' + balance);
+                
+                const balanceFormatted = web3.utils.fromWei(balance, 'ether');
+                log('Formatted: ' + balanceFormatted + ' KING');
+                
+                const distributed = totalSupply - balance;
+                const distributedFormatted = web3.utils.fromWei(distributed.toString(), 'ether');
+                const progress = (Number(distributed) / Number(totalSupply) * 100).toFixed(2);
+                
+                log('=== SUMMARY ===');
+                log('Total Supply: ' + formatted + ' KING');
+                log('Contract Balance: ' + balanceFormatted + ' KING');
+                log('Distributed: ' + distributedFormatted + ' KING');
+                log('Progress: ' + progress + '%');
+                
+                return true;
+            } catch (error) {
+                log('❌ Contract call failed: ' + error.message, true);
+                console.error('Full error:', error);
+                return false;
+            }
+        }
+        
+        async function testAll() {
+            document.getElementById('results').innerHTML = '';
+            log('=== Running All Tests ===\n');
+            
+            if (!testWeb3()) return;
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!await testConnection()) return;
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await testContract();
+        }
+        
+        // Auto run on load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('Page loaded. Click buttons to test.');
+        });
+    </script>
+</body>
+</html>
+
